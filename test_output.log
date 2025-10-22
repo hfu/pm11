@@ -1,0 +1,6 @@
+=== Pipeline start ===
+pmtiles source: https://tunnel.optgeo.org/protomaps-basemap.pmtiles
+Region GeoJSON output: combined_countries.geojson
+No output pmtiles requested (pass OUTPUT filename as first arg to run extract)
+
+1) Fetching Overpass data...
