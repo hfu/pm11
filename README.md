@@ -83,6 +83,9 @@ make geojson
 # Extract pmtiles
 make extract OUTPUT=protomaps_countries.pmtiles
 
+# Upload pmtiles to remote server
+make upload OUTPUT=protomaps_countries.pmtiles
+
 # Clean generated files
 make clean
 ```
@@ -124,6 +127,26 @@ Use a different Overpass API endpoint:
 OVERPASS_URL=https://overpass.kumi.systems/api/interpreter ./run_all.sh
 ```
 
+#### Uploading PMTiles
+
+After extracting PMTiles, you can upload them to a remote server using the `upload` target:
+
+```bash
+# Upload with default destination
+make upload OUTPUT=protomaps_countries.pmtiles
+
+# Upload to a custom destination
+UPLOAD_HOST=user@server.com:/path/to/destination make upload OUTPUT=protomaps_countries.pmtiles
+```
+
+**Security Considerations:**
+- The `upload` target requires explicit specification of the `OUTPUT` file to prevent accidental uploads
+- The file must exist before upload (validation is performed)
+- By default, uploads to `pod@pod.local:/home/pod/x-24b/data`
+- Uses rsync with progress indicator (`-av --progress`)
+- Ensure proper SSH key authentication is configured for the destination server
+- Review the destination path carefully before running the command
+
 ## Environment Variables
 
 | Variable | Default | Description |
@@ -134,6 +157,7 @@ OVERPASS_URL=https://overpass.kumi.systems/api/interpreter ./run_all.sh
 | `SIMPLIFY_PCT` | `0` | Mapshaper simplification percentage (0 = no simplification) |
 | `MIN_ZOOM` | (empty) | Minimum zoom level for pmtiles extract |
 | `MAX_ZOOM` | (empty) | Maximum zoom level for pmtiles extract |
+| `UPLOAD_HOST` | `pod@pod.local:/home/pod/x-24b/data` | Upload destination for rsync |
 
 ## Scripts
 
@@ -257,6 +281,9 @@ make geojson
 
 # Extract with custom settings
 SIMPLIFY_PCT=1 make extract OUTPUT=simplified_countries.pmtiles
+
+# Upload to remote server
+make upload OUTPUT=simplified_countries.pmtiles
 
 # Clean up
 make clean
