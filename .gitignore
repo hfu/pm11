@@ -1,0 +1,25 @@
+# Generated GeoJSON files
+combined_countries.geojson
+countries_osm.json
+countries_maybe_geojson.json
+countries_clean.geojson
+countries_raw.geojson
+
+# Generated PMTiles files
+*.pmtiles
+
+# Test and log files
+*.log
+
+# Node modules (if installed)
+node_modules/
+
+# macOS
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
