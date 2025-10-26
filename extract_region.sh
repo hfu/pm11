@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# run_all.sh (URL-based pmtiles)
+# extract_region.sh (URL-based pmtiles)
 # - Fetches country relations from Overpass (name:en regex)
 # - Accepts either GeoJSON or OSM JSON (auto-detects and runs osmtogeojson when needed)
 # - Normalizes with ogr2ogr if available
@@ -9,10 +9,10 @@ set -euo pipefail
 # - Runs pmtiles extract using a PMTILES_URL (can be http(s) URL or local path)
 #
 # Usage:
-#   ./run_all.sh                  # produce combined_countries.geojson only
-#   ./run_all.sh OUTPUT.pmtiles   # produce OUTPUT.pmtiles (pmtiles extract)
-#   SIMPLIFY_PCT=2 ./run_all.sh out.pmtiles
-#   MIN_ZOOM=0 MAX_ZOOM=8 ./run_all.sh out.pmtiles
+#   ./extract_region.sh                  # produce REGION.geojson only
+#   ./extract_region.sh OUTPUT.pmtiles   # produce OUTPUT.pmtiles (pmtiles extract)
+#   SIMPLIFY_PCT=2 ./extract_region.sh out.pmtiles
+#   MIN_ZOOM=0 MAX_ZOOM=8 ./extract_region.sh out.pmtiles
 #
 # Env / overrides:
 #   PMTILES_URL  default https://tunnel.optgeo.org/protomaps-basemap.pmtiles
@@ -32,19 +32,19 @@ MIN_ZOOM="${MIN_ZOOM:-}"
 MAX_ZOOM="${MAX_ZOOM:-}"
 
 # Temporary and output files
-TMP_OSM="countries_osm.json"
-TMP_GEO="countries_maybe_geojson.json"
-CLEAN_GEO="countries_clean.geojson"
-OUT_GEO="combined_countries.geojson"
+TMP_OSM="region_osm.json"
+TMP_GEO="region_maybe_geojson.json"
+CLEAN_GEO="region_clean.geojson"
+REGION_GEO="REGION.geojson"
 
 # Country regex (english names)
 COUNTRY_REGEX='^(Togo|Rwanda|Thailand|East Timor|Vanuatu|Fiji|Honduras|Moldova|Ethiopia|Laos|Papua New Guinea)$'
 
-OVERPASS_Q="(relation[\"boundary\"=\"administrative\"][\"admin_level\"=\"2\"][\"name:en\"~\"(?i)$COUNTRY_REGEX\"];);out geom;"
+OVERPASS_Q="(relation[\"boundary\"=\"administrative\"][\"admin_level\"=\"2\"][\"name:en\"~\"$COUNTRY_REGEX\"];);out geom;"
 
 echo "=== Pipeline start ==="
 echo "pmtiles source: $PMTILES_URL"
-echo "Region GeoJSON output: $OUT_GEO"
+echo "Region GeoJSON output: $REGION_GEO"
 if [ $# -ge 1 ]; then
   OUTPUT_PM="$1"
   echo "Will produce output pmtiles: $OUTPUT_PM"
@@ -99,38 +99,44 @@ else
 fi
 
 echo
-echo "3) Dissolve into single MultiPolygon and optional simplify (mapshaper)..."
-MAPSHAPER_CMD="mapshaper"
-if ! command -v mapshaper >/dev/null 2>&1; then
-  MAPSHAPER_CMD="npx --yes mapshaper"
-fi
-
-if [ "${SIMPLIFY_PCT}" -gt 0 ]; then
-  echo "Running: $MAPSHAPER_CMD $CLEAN_GEO -dissolve -clean -simplify dp ${SIMPLIFY_PCT}% keep-shapes -o format=geojson $OUT_GEO"
-  $MAPSHAPER_CMD "$CLEAN_GEO" -dissolve -clean -simplify dp "${SIMPLIFY_PCT}%" keep-shapes -o format=geojson "$OUT_GEO"
+echo "3) Extract polygons from GeoJSON..."
+POLYGON_GEO="region_polygons.geojson"
+if command -v ogr2ogr >/dev/null 2>&1; then
+  ogr2ogr -f GeoJSON "$POLYGON_GEO" "$CLEAN_GEO" -where "OGR_GEOMETRY='POLYGON' OR OGR_GEOMETRY='MULTIPOLYGON'"
+  echo "Extracted polygons -> $POLYGON_GEO"
 else
-  echo "Running: $MAPSHAPER_CMD $CLEAN_GEO -dissolve -clean -o format=geojson $OUT_GEO"
-  $MAPSHAPER_CMD "$CLEAN_GEO" -dissolve -clean -o format=geojson "$OUT_GEO"
+  echo "ogr2ogr not found; cannot extract polygons. Abort."
+  exit 1
 fi
 
-echo "Produced region GeoJSON: $OUT_GEO"
+echo
+echo "4) Dissolve into single MultiPolygon with ogr2ogr..."
+if command -v ogr2ogr >/dev/null 2>&1; then
+  ogr2ogr -f GeoJSON "$REGION_GEO" "$POLYGON_GEO" -dialect sqlite -sql "SELECT ST_Union(geometry) AS geometry FROM region_maybe_geojson"
+  echo "Dissolved GeoJSON -> $REGION_GEO"
+else
+  echo "ogr2ogr not found; cannot dissolve. Abort."
+  exit 1
+fi
+
+echo "Produced region GeoJSON: $REGION_GEO"
 if command -v jq >/dev/null 2>&1; then
-  echo " - features: $(jq '.features|length' "$OUT_GEO")"
-  echo " - geometry type: $(jq -r '.features[0].geometry.type' "$OUT_GEO")"
+  echo " - features: $(jq '.features|length' "$REGION_GEO")"
+  echo " - geometry type: $(jq -r '.features[0].geometry.type' "$REGION_GEO")"
 fi
 
 if [ -z "$OUTPUT_PM" ]; then
   echo
-  echo "Pipeline complete. GeoJSON is at: $OUT_GEO"
+  echo "Pipeline complete. GeoJSON is at: $REGION_GEO"
   echo "To extract pmtiles, run:"
-  echo "  ./run_all.sh output_filename.pmtiles"
+  echo "  ./extract_region.sh output_filename.pmtiles"
   exit 0
 fi
 
 echo
 echo "4) Running pmtiles extract (using PMTILES_URL directly)..."
 if command -v pmtiles >/dev/null 2>&1; then
-  EXTRACT_CMD=(pmtiles extract "$PMTILES_URL" "$OUTPUT_PM" --region="$OUT_GEO")
+  EXTRACT_CMD=(pmtiles extract "$PMTILES_URL" "$OUTPUT_PM" --region="$REGION_GEO")
   if [ -n "$MIN_ZOOM" ]; then EXTRACT_CMD+=(--min-zoom "$MIN_ZOOM"); fi
   if [ -n "$MAX_ZOOM" ]; then EXTRACT_CMD+=(--max-zoom "$MAX_ZOOM"); fi
   echo "Executing: ${EXTRACT_CMD[*]}"
@@ -139,7 +145,7 @@ if command -v pmtiles >/dev/null 2>&1; then
 else
   echo "pmtiles CLI not found. Skipping extract."
   echo "Run the following manually (pmtiles must accept URL):"
-  CMD="pmtiles extract \"$PMTILES_URL\" \"$OUTPUT_PM\" --region=\"$OUT_GEO\""
+  CMD="pmtiles extract \"$PMTILES_URL\" \"$OUTPUT_PM\" --region=\"$REGION_GEO\""
   if [ -n "$MIN_ZOOM" ]; then CMD+=" --min-zoom $MIN_ZOOM"; fi
   if [ -n "$MAX_ZOOM" ]; then CMD+=" --max-zoom $MAX_ZOOM"; fi
   echo "  $CMD"
@@ -147,4 +153,4 @@ else
 fi
 
 echo
-echo "=== Done. Output pmtiles: $OUTPUT_PM ; region geojson: $OUT_GEO ==="
+echo "=== Done. Output pmtiles: $OUTPUT_PM ; region geojson: $REGION_GEO ==="

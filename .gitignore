@@ -1,9 +1,9 @@
 # Generated GeoJSON files
-combined_countries.geojson
-countries_osm.json
-countries_maybe_geojson.json
-countries_clean.geojson
-countries_raw.geojson
+REGION.geojson
+region_osm.json
+region_maybe_geojson.json
+region_clean.geojson
+region_raw.geojson
 
 # Generated PMTiles files
 *.pmtiles

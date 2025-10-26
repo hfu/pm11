@@ -62,13 +62,13 @@ npm install -g pmtiles
 
 ```bash
 # Make scripts executable (if not already)
-chmod +x run_all.sh make_countries_geojson.sh
+chmod +x extract_region.sh make_region.sh
 
-# Generate combined_countries.geojson only
-./run_all.sh
+# Generate REGION.geojson only
+./extract_region.sh
 
 # Generate GeoJSON and extract pmtiles
-./run_all.sh protomaps_countries.pmtiles
+./extract_region.sh pm11.pmtiles
 ```
 
 ### Using Makefile
@@ -77,14 +77,14 @@ chmod +x run_all.sh make_countries_geojson.sh
 # Show help
 make help
 
-# Generate combined_countries.geojson
+# Generate REGION.geojson
 make geojson
 
 # Extract pmtiles
-make extract OUTPUT=protomaps_countries.pmtiles
+make extract OUTPUT=pm11.pmtiles
 
 # Upload pmtiles to remote server
-make upload OUTPUT=protomaps_countries.pmtiles
+make upload OUTPUT=pm11.pmtiles
 
 # Clean generated files
 make clean
@@ -97,7 +97,7 @@ make clean
 Simplify the geometry by a percentage (useful for smaller file sizes, but be careful with island nations):
 
 ```bash
-SIMPLIFY_PCT=2 ./run_all.sh protomaps_countries_small.pmtiles
+SIMPLIFY_PCT=2 ./extract_region.sh pm11_small.pmtiles
 ```
 
 #### Custom Zoom Levels
@@ -105,7 +105,7 @@ SIMPLIFY_PCT=2 ./run_all.sh protomaps_countries_small.pmtiles
 Specify minimum and maximum zoom levels for extraction:
 
 ```bash
-MIN_ZOOM=0 MAX_ZOOM=8 ./run_all.sh protomaps_countries_z0-8.pmtiles
+MIN_ZOOM=0 MAX_ZOOM=8 ./extract_region.sh pm11_z0-8.pmtiles
 ```
 
 #### Custom PMTiles Source
@@ -113,10 +113,11 @@ MIN_ZOOM=0 MAX_ZOOM=8 ./run_all.sh protomaps_countries_z0-8.pmtiles
 Use a different PMTiles source (URL or local file):
 
 ```bash
-PMTILES_URL=/path/to/local/basemap.pmtiles ./run_all.sh output.pmtiles
+# Extract
+PMTILES_URL=basemap.pmtiles ./extract_region.sh output.pmtiles
 
 # Or a different URL
-PMTILES_URL=https://example.com/custom-basemap.pmtiles ./run_all.sh output.pmtiles
+PMTILES_URL=https://example.com/custom-basemap.pmtiles ./extract_region.sh output.pmtiles
 ```
 
 #### Custom Overpass Server
@@ -124,7 +125,7 @@ PMTILES_URL=https://example.com/custom-basemap.pmtiles ./run_all.sh output.pmtil
 Use a different Overpass API endpoint:
 
 ```bash
-OVERPASS_URL=https://overpass.kumi.systems/api/interpreter ./run_all.sh
+OVERPASS_URL=https://overpass.kumi.systems/api/interpreter ./extract_region.sh
 ```
 
 #### Uploading PMTiles
@@ -133,10 +134,10 @@ After extracting PMTiles, you can upload them to a remote server using the `uplo
 
 ```bash
 # Upload with default destination
-make upload OUTPUT=protomaps_countries.pmtiles
+make upload OUTPUT=pm11.pmtiles
 
 # Upload to a custom destination
-UPLOAD_HOST=user@server.com:/path/to/destination make upload OUTPUT=protomaps_countries.pmtiles
+UPLOAD_HOST=user@server.com:/path/to/destination make upload OUTPUT=pm11.pmtiles
 ```
 
 **Security Considerations:**
@@ -161,7 +162,7 @@ UPLOAD_HOST=user@server.com:/path/to/destination make upload OUTPUT=protomaps_co
 
 ## Scripts
 
-### `run_all.sh`
+### `extract_region.sh`
 
 Main script that handles the complete pipeline:
 1. Fetches country relations from Overpass API
@@ -173,25 +174,25 @@ Main script that handles the complete pipeline:
 
 **Usage:**
 ```bash
-./run_all.sh                    # Generate GeoJSON only
-./run_all.sh OUTPUT.pmtiles     # Generate GeoJSON and extract pmtiles
+./extract_region.sh                    # Generate GeoJSON only
+./extract_region.sh OUTPUT.pmtiles     # Generate GeoJSON and extract pmtiles
 ```
 
-### `make_countries_geojson.sh`
+### `make_region.sh`
 
-Legacy script for generating GeoJSON (similar functionality to `run_all.sh`):
+Legacy script for generating GeoJSON (similar functionality to `extract_region.sh`):
 
 **Usage:**
 ```bash
-./make_countries_geojson.sh                          # Generate GeoJSON only
-./make_countries_geojson.sh input.pmtiles output.pmtiles  # Include pmtiles extraction
+./make_region.sh                          # Generate GeoJSON only
+./make_region.sh input.pmtiles output.pmtiles  # Include pmtiles extraction
 ```
 
 ## Output Files
 
-- `combined_countries.geojson` - Final combined MultiPolygon region
-- `countries_osm.json` / `countries_maybe_geojson.json` - Intermediate Overpass response
-- `countries_clean.geojson` / `countries_raw.geojson` - Intermediate normalized GeoJSON
+- `REGION.geojson` - Final combined MultiPolygon region
+- `region_osm.json` / `region_maybe_geojson.json` - Intermediate Overpass response
+- `region_clean.geojson` / `region_raw.geojson` - Intermediate normalized GeoJSON
 
 ## Important Notes
 
@@ -223,19 +224,19 @@ Some versions of the pmtiles CLI may not support URL inputs directly. If you enc
 If the Overpass query times out, increase the timeout:
 
 ```bash
-TIMEOUT=120 ./run_all.sh
+TIMEOUT=120 ./extract_region.sh
 ```
 
 Alternatively, use a different Overpass server that may have better availability.
 
 ### Validation
 
-After generating `combined_countries.geojson`, validate the output:
+After generating `REGION.geojson`, validate the output:
 
 ```bash
 # Check feature count and geometry type
-jq '.features | length' combined_countries.geojson
-jq '.features[0].geometry.type' combined_countries.geojson
+jq '.features | length' REGION.geojson
+jq '.features[0].geometry.type' REGION.geojson
 
 # Visualize in a web browser
 # Upload to https://geojson.io or use QGIS
@@ -246,21 +247,21 @@ jq '.features[0].geometry.type' combined_countries.geojson
 ### Example 1: Basic GeoJSON Generation
 
 ```bash
-./run_all.sh
-# Output: combined_countries.geojson
+./extract_region.sh
+# Output: REGION.geojson
 ```
 
 ### Example 2: Extract with Default Settings
 
 ```bash
-./run_all.sh protomaps_11countries.pmtiles
-# Output: combined_countries.geojson, protomaps_11countries.pmtiles
+./extract_region.sh pm11.pmtiles
+# Output: REGION.geojson, pm11.pmtiles
 ```
 
 ### Example 3: Low-Zoom Basemap with Simplification
 
 ```bash
-SIMPLIFY_PCT=2 MIN_ZOOM=0 MAX_ZOOM=8 ./run_all.sh lowzoom_countries.pmtiles
+SIMPLIFY_PCT=2 MIN_ZOOM=0 MAX_ZOOM=8 ./extract_region.sh lowzoom_countries.pmtiles
 ```
 
 ### Example 4: Using Local PMTiles
@@ -270,7 +271,7 @@ SIMPLIFY_PCT=2 MIN_ZOOM=0 MAX_ZOOM=8 ./run_all.sh lowzoom_countries.pmtiles
 curl -o basemap.pmtiles https://tunnel.optgeo.org/protomaps-basemap.pmtiles
 
 # Extract
-PMTILES_URL=basemap.pmtiles ./run_all.sh output.pmtiles
+PMTILES_URL=basemap.pmtiles ./extract_region.sh output.pmtiles
 ```
 
 ### Example 5: Using Makefile
@@ -295,15 +296,15 @@ To test the scripts without creating output pmtiles (just verify GeoJSON generat
 
 ```bash
 # Run GeoJSON generation only
-./run_all.sh
+./extract_region.sh
 
 # Check output
-ls -lh combined_countries.geojson
-jq '.features[0].geometry.type' combined_countries.geojson
+ls -lh REGION.geojson
+jq '.features[0].geometry.type' REGION.geojson
 ```
 
 Expected output:
-- File `combined_countries.geojson` exists
+- File `REGION.geojson` exists
 - Geometry type is `MultiPolygon`
 - Feature count is 1 (all countries dissolved into one)
 
@@ -316,7 +317,7 @@ Install Node.js: `brew install node` (macOS) or `apt-get install nodejs npm` (Ub
 Install pmtiles: `npm install -g pmtiles` or download from [go-pmtiles releases](https://github.com/protomaps/go-pmtiles/releases)
 
 ### Error: "Overpass returned no data"
-- Increase timeout: `TIMEOUT=120 ./run_all.sh`
+- Increase timeout: `TIMEOUT=120 ./extract_region.sh`
 - Try a different Overpass server
 - Check if the country name regex needs adjustment
 

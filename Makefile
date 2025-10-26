@@ -5,15 +5,15 @@ help:
 	@echo "PM11 - PMTiles extraction for 11 countries"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  make geojson              - Generate combined_countries.geojson from Overpass API"
-	@echo "  make extract OUTPUT=file  - Extract pmtiles using combined_countries.geojson"
+	@echo "  make geojson              - Generate REGION.geojson from Overpass API"
+	@echo "  make extract OUTPUT=file  - Extract pmtiles using REGION.geojson"
 	@echo "  make upload OUTPUT=file   - Upload pmtiles to remote server"
 	@echo "  make clean                - Remove generated files"
 	@echo ""
 	@echo "Examples:"
 	@echo "  make geojson"
-	@echo "  make extract OUTPUT=protomaps_countries.pmtiles"
-	@echo "  make upload OUTPUT=protomaps_countries.pmtiles"
+	@echo "  make extract OUTPUT=pm11.pmtiles"
+	@echo "  make upload OUTPUT=pm11.pmtiles"
 	@echo "  SIMPLIFY_PCT=2 make geojson"
 	@echo "  MIN_ZOOM=0 MAX_ZOOM=8 make extract OUTPUT=countries_z0-8.pmtiles"
 	@echo ""
@@ -26,9 +26,9 @@ help:
 	@echo "  MAX_ZOOM       - Maximum zoom level for extraction (optional)"
 	@echo "  UPLOAD_HOST    - Upload destination (default: pod@pod.local:/home/pod/x-24b/data)"
 
-# Generate combined_countries.geojson
+# Generate REGION.geojson
 geojson:
-	./run_all.sh
+	./extract_region.sh
 
 # Extract pmtiles (requires OUTPUT variable)
 extract:
@@ -36,7 +36,7 @@ extract:
 		echo "ERROR: OUTPUT variable required. Usage: make extract OUTPUT=output.pmtiles"; \
 		exit 1; \
 	fi
-	./run_all.sh "$(OUTPUT)"
+	./extract_region.sh "$(OUTPUT)"
 
 # Upload pmtiles to remote server (requires OUTPUT variable)
 upload:
@@ -59,5 +59,5 @@ upload:
 
 # Clean generated files
 clean:
-	rm -f combined_countries.geojson countries_osm.json countries_maybe_geojson.json countries_clean.geojson countries_raw.geojson
+	rm -f REGION.geojson region_osm.json region_maybe_geojson.json region_clean.geojson region_raw.geojson
 	@echo "Cleaned up generated files"
