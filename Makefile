@@ -49,6 +49,10 @@ upload:
 		exit 1; \
 	fi
 	@UPLOAD_HOST=$${UPLOAD_HOST:-pod@pod.local:/home/pod/x-24b/data}; \
+	case "$(OUTPUT)" in \
+		*[!A-Za-z0-9._-]*) echo "ERROR: OUTPUT contains invalid characters. Allowed: A-Za-z0-9._-"; exit 1;; \
+		"") echo "ERROR: OUTPUT is empty."; exit 1;; \
+	esac; \
 	echo "Uploading $(OUTPUT) to $${UPLOAD_HOST}..."; \
 	rsync -av --progress "$(OUTPUT)" "$${UPLOAD_HOST}"
 	@echo "Upload complete."
