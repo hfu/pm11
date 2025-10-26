@@ -1,20 +1,20 @@
-.PHONY: geojson extract upload clean help
+.PHONY: extract upload clean help
 
 # Default target
 help:
 	@echo "PM11 - PMTiles extraction for 11 countries"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  make geojson              - Generate REGION.geojson from Overpass API"
-	@echo "  make extract OUTPUT=file  - Extract pmtiles using REGION.geojson"
-	@echo "  make upload OUTPUT=file   - Upload pmtiles to remote server"
+	@echo "  make extract [OUTPUT=file] - Generate REGION.geojson and extract pmtiles (default: pm11.pmtiles)"
+	@echo "  make upload [OUTPUT=file]  - Upload pmtiles to remote server (default: pm11.pmtiles)"
 	@echo "  make clean                - Remove generated files"
 	@echo ""
 	@echo "Examples:"
-	@echo "  make geojson"
+	@echo "  make extract"
 	@echo "  make extract OUTPUT=pm11.pmtiles"
+	@echo "  make upload"
 	@echo "  make upload OUTPUT=pm11.pmtiles"
-	@echo "  SIMPLIFY_PCT=2 make geojson"
+	@echo "  SIMPLIFY_PCT=2 make extract OUTPUT=pm11.pmtiles"
 	@echo "  MIN_ZOOM=0 MAX_ZOOM=8 make extract OUTPUT=countries_z0-8.pmtiles"
 	@echo ""
 	@echo "Environment variables:"
@@ -26,38 +26,28 @@ help:
 	@echo "  MAX_ZOOM       - Maximum zoom level for extraction (optional)"
 	@echo "  UPLOAD_HOST    - Upload destination (default: pod@pod.local:/home/pod/x-24b/data)"
 
-# Generate REGION.geojson
-geojson:
-	./extract_region.sh
-
-# Extract pmtiles (requires OUTPUT variable)
+# Extract pmtiles (optional OUTPUT variable, defaults to pm11.pmtiles)
 extract:
-	@if [ -z "$(OUTPUT)" ]; then \
-		echo "ERROR: OUTPUT variable required. Usage: make extract OUTPUT=output.pmtiles"; \
-		exit 1; \
-	fi
-	./extract_region.sh "$(OUTPUT)"
+	@OUTPUT=$${OUTPUT:-pm11.pmtiles}; \
+	./extract_region.sh "$$OUTPUT"
 
-# Upload pmtiles to remote server (requires OUTPUT variable)
+# Upload pmtiles to remote server (optional OUTPUT variable, defaults to pm11.pmtiles)
 upload:
-	@if [ -z "$(OUTPUT)" ]; then \
-		echo "ERROR: OUTPUT variable required. Usage: make upload OUTPUT=output.pmtiles"; \
+	@OUTPUT=$${OUTPUT:-pm11.pmtiles}; \
+	if [ ! -f "$$OUTPUT" ]; then \
+		echo "ERROR: File $$OUTPUT does not exist. Please create it first with 'make extract OUTPUT=$$OUTPUT'"; \
 		exit 1; \
-	fi
-	@if [ ! -f "$(OUTPUT)" ]; then \
-		echo "ERROR: File $(OUTPUT) does not exist. Please create it first with 'make extract OUTPUT=$(OUTPUT)'"; \
-		exit 1; \
-	fi
-	@UPLOAD_HOST=$${UPLOAD_HOST:-pod@pod.local:/home/pod/x-24b/data}; \
-	case "$(OUTPUT)" in \
+	fi; \
+	UPLOAD_HOST=$${UPLOAD_HOST:-pod@pod.local:/home/pod/x-24b/data}; \
+	case "$$OUTPUT" in \
 		*[!A-Za-z0-9._-]*) echo "ERROR: OUTPUT contains invalid characters. Allowed: A-Za-z0-9._-"; exit 1;; \
 		"") echo "ERROR: OUTPUT is empty."; exit 1;; \
 	esac; \
-	echo "Uploading $(OUTPUT) to $${UPLOAD_HOST}..."; \
-	rsync -av --progress "$(OUTPUT)" "$${UPLOAD_HOST}"
-	@echo "Upload complete."
+	echo "Uploading $$OUTPUT to $${UPLOAD_HOST}..."; \
+	rsync -av --progress "$$OUTPUT" "$${UPLOAD_HOST}"; \
+	echo "Upload complete."
 
 # Clean generated files
 clean:
-	rm -f REGION.geojson region_osm.json region_maybe_geojson.json region_clean.geojson region_raw.geojson
+	rm -f REGION.geojson region_osm.json region_maybe_geojson.json region_clean.geojson region_polygons.geojson
 	@echo "Cleaned up generated files"

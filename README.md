@@ -62,7 +62,7 @@ npm install -g pmtiles
 
 ```bash
 # Make scripts executable (if not already)
-chmod +x extract_region.sh make_region.sh
+chmod +x extract_region.sh
 
 # Generate REGION.geojson only
 ./extract_region.sh
@@ -77,14 +77,17 @@ chmod +x extract_region.sh make_region.sh
 # Show help
 make help
 
-# Generate REGION.geojson
-make geojson
+# Extract pmtiles (defaults to pm11.pmtiles)
+make extract
 
-# Extract pmtiles
-make extract OUTPUT=pm11.pmtiles
+# Extract with custom output
+make extract OUTPUT=custom.pmtiles
 
-# Upload pmtiles to remote server
-make upload OUTPUT=pm11.pmtiles
+# Upload pmtiles to remote server (defaults to pm11.pmtiles)
+make upload
+
+# Upload custom file
+make upload OUTPUT=custom.pmtiles
 
 # Clean generated files
 make clean
@@ -141,7 +144,7 @@ UPLOAD_HOST=user@server.com:/path/to/destination make upload OUTPUT=pm11.pmtiles
 ```
 
 **Security Considerations:**
-- The `upload` target requires explicit specification of the `OUTPUT` file to prevent accidental uploads
+- The `upload` target uploads the default file `pm11.pmtiles` if no OUTPUT is specified
 - The file must exist before upload (validation is performed)
 - By default, uploads to `pod@pod.local:/home/pod/x-24b/data`
 - Uses rsync with progress indicator (`-av --progress`)
@@ -176,16 +179,6 @@ Main script that handles the complete pipeline:
 ```bash
 ./extract_region.sh                    # Generate GeoJSON only
 ./extract_region.sh OUTPUT.pmtiles     # Generate GeoJSON and extract pmtiles
-```
-
-### `make_region.sh`
-
-Legacy script for generating GeoJSON (similar functionality to `extract_region.sh`):
-
-**Usage:**
-```bash
-./make_region.sh                          # Generate GeoJSON only
-./make_region.sh input.pmtiles output.pmtiles  # Include pmtiles extraction
 ```
 
 ## Output Files
@@ -277,9 +270,6 @@ PMTILES_URL=basemap.pmtiles ./extract_region.sh output.pmtiles
 ### Example 5: Using Makefile
 
 ```bash
-# Generate GeoJSON
-make geojson
-
 # Extract with custom settings
 SIMPLIFY_PCT=1 make extract OUTPUT=simplified_countries.pmtiles
 

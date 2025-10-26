@@ -58,20 +58,26 @@ else
   cp "$REGION_GEO" "$REGION_CLEAN"
 fi
 
-echo "4) Dissolve features into a single MultiPolygon and optionally simplify (mapshaper)..."
-MAPSHAPER_CMD="mapshaper"
-if ! command -v mapshaper >/dev/null 2>&1; then
-  MAPSHAPER_CMD="npx --yes mapshaper"
-fi
-
-if [ "${SIMPLIFY_PCT:-0}" -gt 0 ]; then
-  $MAPSHAPER_CMD "$REGION_CLEAN" -dissolve -clean -simplify dp "${SIMPLIFY_PCT}%" keep-shapes -o "$REGION" format=geojson
+echo "4) Extract polygons from GeoJSON..."
+POLYGON_GEO="region_polygons.geojson"
+if command -v ogr2ogr >/dev/null 2>&1; then
+  ogr2ogr -f GeoJSON "$POLYGON_GEO" "$REGION_CLEAN" -where "OGR_GEOMETRY='POLYGON' OR OGR_GEOMETRY='MULTIPOLYGON'"
+  echo "Extracted polygons -> $POLYGON_GEO"
 else
-  $MAPSHAPER_CMD "$REGION_CLEAN" -dissolve -clean -o "$REGION" format=geojson
+  echo "ogr2ogr not found; cannot extract polygons. Abort."
+  exit 1
 fi
-echo "Output produced: $REGION"
 
-echo "5) Quick checks:"
+echo "5) Dissolve into single MultiPolygon with ogr2ogr..."
+if command -v ogr2ogr >/dev/null 2>&1; then
+  ogr2ogr -f GeoJSON "$REGION" "$POLYGON_GEO" -dialect sqlite -sql "SELECT ST_Union(geometry) AS geometry FROM region_maybe_geojson"
+  echo "Dissolved GeoJSON -> $REGION"
+else
+  echo "ogr2ogr not found; cannot dissolve. Abort."
+  exit 1
+fi
+
+echo "6) Quick checks:"
 if command -v jq >/dev/null 2>&1; then
   echo "- Feature count:" $(jq '.features | length' "$REGION")
   echo "- Geometry type:" $(jq -r '.features[0].geometry.type' "$REGION")
@@ -79,7 +85,7 @@ fi
 
 if [ -n "$INPUT_PM" ] && [ -n "$OUTPUT_PM" ]; then
   if command -v pmtiles >/dev/null 2>&1; then
-    echo "6) Running pmtiles extract ${INPUT_PM} -> ${OUTPUT_PM} with region ${REGION} ..."
+    echo "7) Running pmtiles extract ${INPUT_PM} -> ${OUTPUT_PM} with region ${REGION} ..."
     pmtiles extract "${INPUT_PM}" "${OUTPUT_PM}" --region="${REGION}"
     echo "pmtiles extract finished: ${OUTPUT_PM}"
   else
