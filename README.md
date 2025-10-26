@@ -144,6 +144,7 @@ UPLOAD_HOST=user@server.com:/path/to/destination make upload OUTPUT=pm11.pmtiles
 ```
 
 **Security Considerations:**
+
 - The `upload` target uploads the default file `pm11.pmtiles` if no OUTPUT is specified
 - The file must exist before upload (validation is performed)
 - By default, uploads to `pod@pod.local:/home/pod/x-24b/data`
@@ -168,6 +169,7 @@ UPLOAD_HOST=user@server.com:/path/to/destination make upload OUTPUT=pm11.pmtiles
 ### `extract_region.sh`
 
 Main script that handles the complete pipeline:
+
 1. Fetches country relations from Overpass API
 2. Auto-detects and converts OSM JSON to GeoJSON if needed
 3. Normalizes with ogr2ogr (if available)
@@ -192,6 +194,7 @@ Main script that handles the complete pipeline:
 ### Island Nations and Simplification
 
 ⚠️ **Warning:** Island nations (Vanuatu, Fiji, Papua New Guinea, East Timor) can lose small islands during aggressive simplification. Use `SIMPLIFY_PCT` cautiously:
+
 - `SIMPLIFY_PCT=0` (default) - No simplification, preserves all details
 - `SIMPLIFY_PCT=1-2` - Mild simplification, usually safe
 - `SIMPLIFY_PCT=5+` - Aggressive simplification, may lose small islands
@@ -294,6 +297,7 @@ jq '.features[0].geometry.type' REGION.geojson
 ```
 
 Expected output:
+
 - File `REGION.geojson` exists
 - Geometry type is `MultiPolygon`
 - Feature count is 1 (all countries dissolved into one)
@@ -301,17 +305,21 @@ Expected output:
 ## Troubleshooting
 
 ### Error: "npx not found"
+
 Install Node.js: `brew install node` (macOS) or `apt-get install nodejs npm` (Ubuntu)
 
 ### Error: "pmtiles CLI not found"
+
 Install pmtiles: `npm install -g pmtiles` or download from [go-pmtiles releases](https://github.com/protomaps/go-pmtiles/releases)
 
 ### Error: "Overpass returned no data"
+
 - Increase timeout: `TIMEOUT=120 ./extract_region.sh`
 - Try a different Overpass server
 - Check if the country name regex needs adjustment
 
-### Warning: Small islands missing after simplification
+### Warning: Small islands missing after simplification"
+
 - Reduce `SIMPLIFY_PCT` to 0 or 1
 - Use the `keep-shapes` option (already included in scripts)
 - Manually verify output with QGIS or geojson.io
@@ -323,6 +331,7 @@ See LICENSE file in the repository.
 ## Contributing
 
 Contributions are welcome! Please ensure:
+
 - Scripts remain POSIX-compliant where possible
 - Makefile recipes use tabs (not spaces)
 - Test with both local and URL-based PMTiles sources
