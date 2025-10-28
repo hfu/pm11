@@ -1,5 +1,6 @@
 import maplibregl from 'maplibre-gl';
 import { Protocol } from 'pmtiles';
+import './index.css';
 
 // PMTiles URL configuration
 const PMTILES_URL = 'https://tunnel.optgeo.org/pm11.pmtiles';
