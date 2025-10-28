@@ -4,6 +4,21 @@ This repository provides scripts to automatically generate a combined GeoJSON re
 
 **PM11** stands for **PMTiles + 11 countries**.
 
+## Demo Site
+
+A live demo of the extracted PMTiles data is available at:
+
+**https://hfu.github.io/pm11/**
+
+The demo site features:
+- Interactive map powered by MapLibre GL JS v5+
+- PMTiles data served from `https://tunnel.optgeo.org/pm11.pmtiles`
+- GlobeControl for 3D globe view
+- GeolocationControl for finding your location
+- Minimal UI for optimal viewing experience
+
+The demo site is built with Vite and consists of a single HTML file and a single JavaScript file, hosted via GitHub Pages from the `/docs` folder.
+
 ## Target Countries
 
 The 11 countries (based on OSM `name:en` tag):
@@ -323,6 +338,27 @@ Install pmtiles: `npm install -g pmtiles` or download from [go-pmtiles releases]
 - Reduce `SIMPLIFY_PCT` to 0 or 1
 - Use the `keep-shapes` option (already included in scripts)
 - Manually verify output with QGIS or geojson.io
+
+## Building the Demo Site
+
+The demo site is built using Vite and can be rebuilt with:
+
+```bash
+# Install dependencies
+npm install
+
+# Build for production (output goes to /docs folder)
+npm run build
+
+# Preview locally
+npm run preview
+```
+
+The build configuration ensures that output files have no hash in their names:
+- `docs/index.html` - Main HTML file
+- `docs/index.js` - Bundled JavaScript with MapLibre GL JS and PMTiles support
+
+The `PMTILES_URL` constant in `src/main.js` can be modified to point to different PMTiles sources.
 
 ## License
 
